@@ -41,7 +41,6 @@ define Package/cli-proxy-api
   TITLE:=CLI Proxy API Server
   URL:=https://github.com/router-for-me/CLIProxyAPI
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
-  PKGARCH:=all
 endef
 
 define Package/cli-proxy-api/description

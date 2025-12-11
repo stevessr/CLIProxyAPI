@@ -59,8 +59,32 @@ jobs:
       - name: Configure OpenWrt
         run: |
           cd openwrt
-          cat > .config <<EOF
-          CONFIG_TARGET_$(echo ${{ matrix.arch }} | cut -d_ -f1)=y
+          
+          # Set architecture-specific target
+          case "${{ matrix.arch }}" in
+            aarch64_generic)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv8=y" >> .config
+              ;;
+            arm_cortex-a9)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv7=y" >> .config
+              ;;
+            mips_24kc)
+              echo "CONFIG_TARGET_ath79=y" >> .config
+              echo "CONFIG_TARGET_ath79_generic=y" >> .config
+              ;;
+            mipsel_24kc)
+              echo "CONFIG_TARGET_ramips=y" >> .config
+              echo "CONFIG_TARGET_ramips_mt7621=y" >> .config
+              ;;
+            x86_64)
+              echo "CONFIG_TARGET_x86=y" >> .config
+              echo "CONFIG_TARGET_x86_64=y" >> .config
+              ;;
+          esac
+          
+          cat >> .config <<EOF
           CONFIG_PACKAGE_cli-proxy-api=m
           CONFIG_PACKAGE_luci-app-cli-proxy-api=m
           CONFIG_PACKAGE_golang=y

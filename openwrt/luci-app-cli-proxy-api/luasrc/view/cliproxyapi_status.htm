@@ -1,5 +1,5 @@
 <script type="text/javascript">//<![CDATA[
-XHR.poll(3, '<%=url([[admin]], [[services]], [[cliproxyapi]], [[status]])%>', null,
+XHR.poll(5, '<%=url([[admin]], [[services]], [[cliproxyapi]], [[status]])%>', null,
 	function(x, data) {
 		var tb = document.getElementById('cliproxyapi_status');
 		if (data && tb) {

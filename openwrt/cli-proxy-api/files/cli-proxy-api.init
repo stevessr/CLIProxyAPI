@@ -27,7 +27,7 @@ start_service() {
 	
 	# Create necessary directories
 	mkdir -p "$auth_dir"
-	mkdir -p "$(dirname "$log_file")"
+	[ -n "$log_file" ] && mkdir -p "$(dirname "$log_file")"
 	mkdir -p "$DATA_DIR"
 	
 	# Check if config file exists, if not copy example
