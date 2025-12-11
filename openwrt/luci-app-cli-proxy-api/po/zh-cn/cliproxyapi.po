@@ -1,0 +1,83 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "CLI Proxy API"
+msgstr "CLI 代理 API"
+
+msgid "A proxy server that provides OpenAI/Gemini/Claude/Codex compatible API interfaces for CLI models. Supports OAuth login for OpenAI Codex, Claude Code, Qwen Code, and iFlow with multi-account management."
+msgstr "为 CLI 模型提供 OpenAI/Gemini/Claude/Codex 兼容 API 接口的代理服务器。支持 OpenAI Codex、Claude Code、Qwen Code 和 iFlow 的 OAuth 登录及多账户管理。"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "RUNNING"
+msgstr "运行中"
+
+msgid "NOT RUNNING"
+msgstr "未运行"
+
+msgid "Collecting data..."
+msgstr "正在收集数据..."
+
+msgid "General Settings"
+msgstr "基本设置"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Port"
+msgstr "端口"
+
+msgid "Listen Address"
+msgstr "监听地址"
+
+msgid "All Interfaces"
+msgstr "所有接口"
+
+msgid "Localhost Only"
+msgstr "仅本地"
+
+msgid "Debug Mode"
+msgstr "调试模式"
+
+msgid "Log File"
+msgstr "日志文件"
+
+msgid "Authentication Directory"
+msgstr "认证目录"
+
+msgid "Configuration File"
+msgstr "配置文件"
+
+msgid "Additional Information"
+msgstr "附加信息"
+
+msgid "Project Homepage"
+msgstr "项目主页"
+
+msgid "Documentation"
+msgstr "文档"
+
+msgid "Note"
+msgstr "注意"
+
+msgid "For advanced configuration, edit the config.yaml file directly. Use SSH to run login commands for OAuth authentication."
+msgstr "高级配置请直接编辑 config.yaml 文件。使用 SSH 运行登录命令进行 OAuth 认证。"
+
+msgid "Login Commands"
+msgstr "登录命令"
+
+msgid "(Google/Gemini)"
+msgstr "（Google/Gemini）"
+
+msgid "(OpenAI Codex)"
+msgstr "（OpenAI Codex）"
+
+msgid "(Claude Code)"
+msgstr "（Claude Code）"
+
+msgid "(Qwen Code)"
+msgstr "（Qwen Code）"
+
+msgid "(iFlow)"
+msgstr "（iFlow）"
