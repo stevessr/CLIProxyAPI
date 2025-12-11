@@ -32,7 +32,14 @@ start_service() {
 	
 	# Check if config file exists, if not copy example
 	if [ ! -f "$config_file" ]; then
-		cp "$CONF_DIR/config.example.yaml" "$config_file"
+		if [ ! -f "$CONF_DIR/config.example.yaml" ]; then
+			logger -t cli-proxy-api "ERROR: config.example.yaml not found"
+			return 1
+		fi
+		cp "$CONF_DIR/config.example.yaml" "$config_file" || {
+			logger -t cli-proxy-api "ERROR: Failed to copy config.example.yaml"
+			return 1
+		}
 	fi
 	
 	procd_open_instance

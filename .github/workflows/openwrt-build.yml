@@ -53,8 +53,8 @@ jobs:
       - name: Copy package files
         run: |
           mkdir -p openwrt/package/custom
-          cp -r openwrt/cli-proxy-api openwrt/package/custom/
-          cp -r openwrt/luci-app-cli-proxy-api openwrt/package/custom/
+          cp -r ./openwrt/cli-proxy-api openwrt/package/custom/
+          cp -r ./openwrt/luci-app-cli-proxy-api openwrt/package/custom/
       
       - name: Configure OpenWrt
         run: |

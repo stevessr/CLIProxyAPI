@@ -1,6 +1,8 @@
 -- Copyright (C) 2024 OpenWrt.org
 -- Licensed under MIT License
 
+-- Note: module() with package.seeall is deprecated in modern Lua but still
+-- widely used in OpenWrt LuCI packages for compatibility
 module("luci.controller.cliproxyapi", package.seeall)
 
 function index()
