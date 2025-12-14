@@ -91,12 +91,32 @@ jobs:
       - name: Copy package files
         run: |
           mkdir -p openwrt/package/custom
+          echo "Copying cli-proxy-api package..."
           cp -r ./opc/cli-proxy-api openwrt/package/custom/
+          echo "Copying luci-app-cli-proxy-api package..."
           cp -r ./opc/luci-app-cli-proxy-api openwrt/package/custom/
+          
+          # Verify packages were copied correctly
+          echo "Verifying package structure..."
+          ls -la openwrt/package/custom/
+          echo "cli-proxy-api Makefile:"
+          cat openwrt/package/custom/cli-proxy-api/Makefile | head -20
+          echo "luci-app-cli-proxy-api Makefile:"
+          cat openwrt/package/custom/luci-app-cli-proxy-api/Makefile | head -20
       
       - name: Configure OpenWrt
         run: |
           cd openwrt
+          
+          # Check if our packages are recognized
+          echo "Checking if cli-proxy-api package is recognized..."
+          find package/ -name "cli-proxy-api" -type d
+          echo "Checking if luci-app-cli-proxy-api package is recognized..."
+          find package/ -name "luci-app-cli-proxy-api" -type d
+          
+          # Try to get package info
+          echo "Getting package info for cli-proxy-api..."
+          make package/cli-proxy-api/info || echo "Package info not available"
           
           # Set architecture-specific target
           case "${{ matrix.arch }}" in
@@ -124,6 +144,10 @@ jobs:
           CONFIG_PACKAGE_golang=y
           CONFIG_CCACHE=y
           EOF
+          
+          echo "Final configuration:"
+          grep -E "CONFIG_PACKAGE_(cli-proxy-api|luci-app-cli-proxy-api|golang)" .config || echo "Packages not found in config"
+          
           make defconfig
       
       - name: Download packages
