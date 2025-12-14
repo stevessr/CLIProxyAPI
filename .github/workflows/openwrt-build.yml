@@ -141,20 +141,32 @@ jobs:
           ccache -M 2G
           ccache -s
           
-          # Build our package - OpenWrt will automatically build dependencies
+          # Build our package first
           echo "Building cli-proxy-api package..."
           make package/cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
             echo "cli-proxy-api build failed, checking relevant logs..."
             find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
             find . -name "config.log" -exec echo "=== config.log ===" \; -exec cat {} \; 2>/dev/null || true
+            echo "Checking for Go build errors..."
+            find build_dir -name "*.go" -path "*/cli-proxy-api/*" -exec echo "=== Go file: {} ===" \; -exec head -20 {} \; 2>/dev/null || true
             exit 1
           }
           
-          # Build LuCI package
+          # Verify cli-proxy-api package was built
+          echo "Verifying cli-proxy-api package was built..."
+          find openwrt/bin/packages -name 'cli-proxy-api*.ipk' -exec ls -la {} \; || {
+            echo "cli-proxy-api package not found after build"
+            find openwrt -name 'cli-proxy-api*.ipk' -exec ls -la {} \; 2>/dev/null || echo "No cli-proxy-api IPK found anywhere"
+            exit 1
+          }
+          
+          # Build LuCI package after main package is successful
           echo "Building luci-app-cli-proxy-api package..."
           make package/luci-app-cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
             echo "luci-app-cli-proxy-api build failed, checking relevant logs..."
             find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
+            echo "Checking LuCI build errors..."
+            find build_dir -path "*/luci-app-cli-proxy-api/*" -name "*.log" -exec echo "=== LuCI log: {} ===" \; -exec cat {} \; 2>/dev/null || true
             exit 1
           }
           
@@ -163,8 +175,33 @@ jobs:
       - name: Collect packages
         run: |
           mkdir -p artifacts
-          find openwrt/bin/packages -name 'cli-proxy-api*.ipk' -exec cp {} artifacts/ \;
-          find openwrt/bin/packages -name 'luci-app-cli-proxy-api*.ipk' -exec cp {} artifacts/ \;
+          
+          # Check if build directory exists
+          if [ ! -d "openwrt/bin" ]; then
+            echo "Build directory not found - build may have failed"
+            echo "Contents of openwrt directory:"
+            ls -la openwrt/ || true
+            echo "Checking for any build artifacts:"
+            find openwrt -name "*.ipk" -type f 2>/dev/null || echo "No IPK files found"
+            exit 1
+          fi
+          
+          # Find and copy packages
+          echo "Searching for cli-proxy-api packages..."
+          find openwrt/bin/packages -name 'cli-proxy-api*.ipk' -exec cp {} artifacts/ \; 2>/dev/null || {
+            echo "cli-proxy-api packages not found in expected location"
+            find openwrt -name 'cli-proxy-api*.ipk' -type f -exec cp {} artifacts/ \; 2>/dev/null || echo "No cli-proxy-api packages found anywhere"
+          }
+          
+          echo "Searching for luci-app-cli-proxy-api packages..."
+          find openwrt/bin/packages -name 'luci-app-cli-proxy-api*.ipk' -exec cp {} artifacts/ \; 2>/dev/null || {
+            echo "luci-app-cli-proxy-api packages not found in expected location"
+            find openwrt -name 'luci-app-cli-proxy-api*.ipk' -type f -exec cp {} artifacts/ \; 2>/dev/null || echo "No luci-app-cli-proxy-api packages found anywhere"
+          }
+          
+          # List what we found
+          echo "Artifacts collected:"
+          ls -la artifacts/ || echo "No artifacts found"
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
