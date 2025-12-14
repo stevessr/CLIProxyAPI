@@ -143,18 +143,18 @@ jobs:
           
           # Build our package - OpenWrt will automatically build dependencies
           echo "Building cli-proxy-api package..."
-          make package/cli-proxy-api/compile -j$(nproc) V=s || {
-            echo "cli-proxy-api build failed, checking logs..."
-            find build_dir -name "*.log" -exec echo "=== {} ===" \; -exec cat {} \;
-            find . -name "config.log" -exec echo "=== config.log ===" \; -exec cat {} \;
+          make package/cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
+            echo "cli-proxy-api build failed, checking relevant logs..."
+            find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
+            find . -name "config.log" -exec echo "=== config.log ===" \; -exec cat {} \; 2>/dev/null || true
             exit 1
           }
           
           # Build LuCI package
           echo "Building luci-app-cli-proxy-api package..."
-          make package/luci-app-cli-proxy-api/compile -j$(nproc) V=s || {
-            echo "luci-app-cli-proxy-api build failed, checking logs..."
-            find build_dir -name "*.log" -exec echo "=== {} ===" \; -exec cat {} \;
+          make package/luci-app-cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
+            echo "luci-app-cli-proxy-api build failed, checking relevant logs..."
+            find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
             exit 1
           }
           
