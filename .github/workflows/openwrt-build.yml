@@ -1,0 +1,258 @@
+name: Build OpenWrt Packages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  OPENWRT_VERSION: openwrt-23.05
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        arch:
+          - aarch64_generic
+          - arm_cortex-a9
+          - arm_cortex-a53
+          - x86_64
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ccache ecj fastjar file g++ gawk \
+            gettext git java-propose-classpath libelf-dev libncurses5-dev \
+            libncursesw5-dev libssl-dev python3 python3-dev python3-setuptools \
+            rsync subversion swig time unzip wget xsltproc zlib1g-dev
+      
+      - name: Clone OpenWrt
+        run: |
+          mv openwrt opc || true
+          git clone --depth=1 --branch=${{ env.OPENWRT_VERSION }} https://github.com/openwrt/openwrt.git openwrt
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+      
+      - name: Cache OpenWrt source
+        uses: actions/cache@v4
+        with:
+          path: openwrt
+          key: openwrt-${{ env.OPENWRT_VERSION }}-source-${{ hashFiles('openwrt/feeds.conf.default', 'openwrt/include/**/*.mk') }}
+          restore-keys: |
+            openwrt-${{ env.OPENWRT_VERSION }}-source-
+            openwrt-${{ env.OPENWRT_VERSION }}-
+      
+      - name: Cache OpenWrt feeds
+        uses: actions/cache@v4
+        with:
+          path: openwrt/feeds
+          key: openwrt-feeds-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/feeds.conf.default') }}
+          restore-keys: |
+            openwrt-feeds-${{ env.OPENWRT_VERSION }}-
+      
+      - name: Cache OpenWrt dl
+        uses: actions/cache@v4
+        with:
+          path: openwrt/dl
+          key: openwrt-dl-${{ env.OPENWRT_VERSION }}
+          restore-keys: |
+            openwrt-dl-
+      
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-openwrt-${{ matrix.arch }}-${{ env.OPENWRT_VERSION }}-cli-proxy-api
+          restore-keys: |
+            ccache-openwrt-${{ matrix.arch }}-${{ env.OPENWRT_VERSION }}-
+            ccache-openwrt-${{ matrix.arch }}-
+      
+      - name: Copy package files
+        run: |
+          mkdir -p openwrt/package/custom
+          echo "Copying cli-proxy-api package..."
+          cp -r ./opc/cli-proxy-api openwrt/package/custom/
+          echo "Copying luci-app-cli-proxy-api package..."
+          cp -r ./opc/luci-app-cli-proxy-api openwrt/package/custom/
+          
+          # Verify packages were copied correctly
+          echo "Verifying package structure..."
+          ls -la openwrt/package/custom/
+          echo "cli-proxy-api Makefile:"
+          cat openwrt/package/custom/cli-proxy-api/Makefile | head -20
+          echo "luci-app-cli-proxy-api Makefile:"
+          cat openwrt/package/custom/luci-app-cli-proxy-api/Makefile | head -20
+      
+      - name: Configure OpenWrt
+        run: |
+          cd openwrt
+          
+          # Check if our packages are recognized
+          echo "Checking if cli-proxy-api package is recognized..."
+          find package/ -name "cli-proxy-api" -type d
+          echo "Checking if luci-app-cli-proxy-api package is recognized..."
+          find package/ -name "luci-app-cli-proxy-api" -type d
+          
+          # Try to get package info
+          echo "Getting package info for cli-proxy-api..."
+          make package/cli-proxy-api/info || echo "Package info not available"
+          
+          # Set architecture-specific target
+          case "${{ matrix.arch }}" in
+            aarch64_generic)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv8=y" >> .config
+              ;;
+            arm_cortex-a9)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv7=y" >> .config
+              ;;
+            arm_cortex-a53)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv8=y" >> .config
+              ;;
+            x86_64)
+              echo "CONFIG_TARGET_x86=y" >> .config
+              echo "CONFIG_TARGET_x86_64=y" >> .config
+              ;;
+          esac
+          
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_cli-proxy-api=m
+          CONFIG_PACKAGE_luci-app-cli-proxy-api=m
+          CONFIG_PACKAGE_golang=y
+          CONFIG_CCACHE=y
+          EOF
+          
+          echo "Final configuration:"
+          grep -E "CONFIG_PACKAGE_(cli-proxy-api|luci-app-cli-proxy-api|golang)" .config || echo "Packages not found in config"
+          
+          make defconfig
+      
+      - name: Download packages
+        run: |
+          cd openwrt
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+      
+      - name: Build packages
+        run: |
+          cd openwrt
+          export CCACHE_DIR=~/.ccache
+          mkdir -p ~/.ccache
+          ccache -M 2G
+          ccache -s
+          
+          # Build our package first
+          echo "Building cli-proxy-api package..."
+          make package/cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
+            echo "cli-proxy-api build failed, checking relevant logs..."
+            find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
+            find . -name "config.log" -exec echo "=== config.log ===" \; -exec cat {} \; 2>/dev/null || true
+            echo "Checking for Go build errors..."
+            find build_dir -name "*.go" -path "*/cli-proxy-api/*" -exec echo "=== Go file: {} ===" \; -exec head -20 {} \; 2>/dev/null || true
+            exit 1
+          }
+          
+          # Verify cli-proxy-api package was built
+          echo "Verifying cli-proxy-api package was built..."
+          find openwrt/bin/packages -name 'cli-proxy-api*.ipk' -exec ls -la {} \; || {
+            echo "cli-proxy-api package not found after build"
+            find openwrt -name 'cli-proxy-api*.ipk' -exec ls -la {} \; 2>/dev/null || echo "No cli-proxy-api IPK found anywhere"
+            exit 1
+          }
+          
+          # Build LuCI package after main package is successful
+          echo "Building luci-app-cli-proxy-api package..."
+          make package/luci-app-cli-proxy-api/compile -j$(nproc) V=s 2>&1 | grep -v "timing.log\|baz.log" || {
+            echo "luci-app-cli-proxy-api build failed, checking relevant logs..."
+            find build_dir -name "*.log" ! -path "*/go-*/*" ! -path "*/test/*" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || true
+            echo "Checking LuCI build errors..."
+            find build_dir -path "*/luci-app-cli-proxy-api/*" -name "*.log" -exec echo "=== LuCI log: {} ===" \; -exec cat {} \; 2>/dev/null || true
+            exit 1
+          }
+          
+          ccache -s
+      
+      - name: Collect packages
+        run: |
+          mkdir -p artifacts
+          
+          # Check if build directory exists
+          if [ ! -d "openwrt/bin" ]; then
+            echo "Build directory not found - build may have failed"
+            echo "Contents of openwrt directory:"
+            ls -la openwrt/ || true
+            echo "Checking for any build artifacts:"
+            find openwrt -name "*.ipk" -type f 2>/dev/null || echo "No IPK files found"
+            exit 1
+          fi
+          
+          # Find and copy packages
+          echo "Searching for cli-proxy-api packages..."
+          find openwrt/bin/packages -name 'cli-proxy-api*.ipk' -exec cp {} artifacts/ \; 2>/dev/null || {
+            echo "cli-proxy-api packages not found in expected location"
+            find openwrt -name 'cli-proxy-api*.ipk' -type f -exec cp {} artifacts/ \; 2>/dev/null || echo "No cli-proxy-api packages found anywhere"
+          }
+          
+          echo "Searching for luci-app-cli-proxy-api packages..."
+          find openwrt/bin/packages -name 'luci-app-cli-proxy-api*.ipk' -exec cp {} artifacts/ \; 2>/dev/null || {
+            echo "luci-app-cli-proxy-api packages not found in expected location"
+            find openwrt -name 'luci-app-cli-proxy-api*.ipk' -type f -exec cp {} artifacts/ \; 2>/dev/null || echo "No luci-app-cli-proxy-api packages found anywhere"
+          }
+          
+          # List what we found
+          echo "Artifacts collected:"
+          ls -la artifacts/ || echo "No artifacts found"
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-packages-${{ matrix.arch }}
+          path: artifacts/*.ipk
+          retention-days: 7
+  
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*.ipk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

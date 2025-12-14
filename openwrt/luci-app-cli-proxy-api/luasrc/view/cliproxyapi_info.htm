@@ -1,0 +1,43 @@
+<fieldset class="cbi-section">
+	<legend><%:Additional Information%></legend>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Project Homepage%>:</label>
+		<div class="cbi-value-field">
+			<a href="https://github.com/router-for-me/CLIProxyAPI" target="_blank">https://github.com/router-for-me/CLIProxyAPI</a>
+		</div>
+	</div>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Documentation%>:</label>
+		<div class="cbi-value-field">
+			<a href="https://help.router-for.me/" target="_blank">https://help.router-for.me/</a>
+		</div>
+	</div>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Configuration File%>:</label>
+		<div class="cbi-value-field">
+			<code>/etc/cli-proxy-api/config.yaml</code>
+		</div>
+	</div>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Authentication Directory%>:</label>
+		<div class="cbi-value-field">
+			<code>/var/lib/cli-proxy-api</code>
+		</div>
+	</div>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Note%>:</label>
+		<div class="cbi-value-field">
+			<%:For advanced configuration, edit the config.yaml file directly. Use SSH to run login commands for OAuth authentication.%>
+		</div>
+	</div>
+	<div class="cbi-value">
+		<label class="cbi-value-title"><%:Login Commands%>:</label>
+		<div class="cbi-value-field">
+			<code>cli-proxy-api -login</code> <%:(Google/Gemini)%><br/>
+			<code>cli-proxy-api -codex-login</code> <%:(OpenAI Codex)%><br/>
+			<code>cli-proxy-api -claude-login</code> <%:(Claude Code)%><br/>
+			<code>cli-proxy-api -qwen-login</code> <%:(Qwen Code)%><br/>
+			<code>cli-proxy-api -iflow-login</code> <%:(iFlow)%>
+		</div>
+	</div>
+</fieldset>

@@ -39,10 +39,15 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 - 支持 OpenAI Codex 多账户轮询
 - 通过配置接入上游 OpenAI 兼容提供商（例如 OpenRouter）
 - 可复用的 Go SDK（见 `docs/sdk-usage_CN.md`）
+- **OpenWrt 支持**，带 LuCI Web 界面（见 `openwrt/README.md`）
 
 ## 新手入门
 
 CLIProxyAPI 用户手册： [https://help.router-for.me/](https://help.router-for.me/cn/)
+
+### OpenWrt
+
+对于 OpenWrt 用户，我们提供原生软件包和 LuCI Web 界面支持。安装和使用说明请参见 [openwrt/README.md](openwrt/README.md)。
 
 ## 管理 API 文档
 

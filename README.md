@@ -40,10 +40,15 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 - OpenAI Codex multi-account load balancing
 - OpenAI-compatible upstream providers via config (e.g., OpenRouter)
 - Reusable Go SDK for embedding the proxy (see `docs/sdk-usage.md`)
+- **OpenWrt support** with LuCI web interface (see `openwrt/README.md`)
 
 ## Getting Started
 
 CLIProxyAPI Guides: [https://help.router-for.me/](https://help.router-for.me/)
+
+### OpenWrt
+
+For OpenWrt users, we provide native packages with LuCI web interface support. See [openwrt/README.md](openwrt/README.md) for installation and usage instructions.
 
 ## Management API
 
