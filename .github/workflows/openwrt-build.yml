@@ -29,8 +29,7 @@ jobs:
         arch:
           - aarch64_generic
           - arm_cortex-a9
-          - mips_24kc
-          - mipsel_24kc
+          - arm_cortex-a53
           - x86_64
     
     steps:
@@ -49,6 +48,7 @@ jobs:
       
       - name: Clone OpenWrt
         run: |
+          mv openwrt opc
           git clone --depth=1 --branch=${{ env.OPENWRT_VERSION }} https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
           ./scripts/feeds update -a
@@ -57,8 +57,8 @@ jobs:
       - name: Copy package files
         run: |
           mkdir -p openwrt/package/custom
-          cp -r ./openwrt/cli-proxy-api openwrt/package/custom/
-          cp -r ./openwrt/luci-app-cli-proxy-api openwrt/package/custom/
+          cp -r ./opc/cli-proxy-api openwrt/package/custom/
+          cp -r ./opc/luci-app-cli-proxy-api openwrt/package/custom/
       
       - name: Configure OpenWrt
         run: |
@@ -74,13 +74,9 @@ jobs:
               echo "CONFIG_TARGET_armsr=y" >> .config
               echo "CONFIG_TARGET_armsr_armv7=y" >> .config
               ;;
-            mips_24kc)
-              echo "CONFIG_TARGET_ath79=y" >> .config
-              echo "CONFIG_TARGET_ath79_generic=y" >> .config
-              ;;
-            mipsel_24kc)
-              echo "CONFIG_TARGET_ramips=y" >> .config
-              echo "CONFIG_TARGET_ramips_mt7621=y" >> .config
+            arm_cortex-a53)
+              echo "CONFIG_TARGET_armsr=y" >> .config
+              echo "CONFIG_TARGET_armsr_armv8=y" >> .config
               ;;
             x86_64)
               echo "CONFIG_TARGET_x86=y" >> .config
