@@ -50,37 +50,28 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-openwrt-${{ matrix.arch }}-${{ hashFiles('openwrt/**/*') }}
+          key: ccache-openwrt-${{ matrix.arch }}-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/package/cli-proxy-api/Makefile', 'openwrt/package/luci-app-cli-proxy-api/Makefile') }}
           restore-keys: |
+            ccache-openwrt-${{ matrix.arch }}-${{ env.OPENWRT_VERSION }}-
             ccache-openwrt-${{ matrix.arch }}-
-            ccache-openwrt-
       
       
-      
-      - name: Cache OpenWrt source
-        id: cache-openwrt
-        uses: actions/cache@v4
-        with:
-          path: openwrt
-          key: openwrt-${{ env.OPENWRT_VERSION }}-${{ hashFiles('go.mod', 'go.sum', 'openwrt/**/*') }}
-          restore-keys: |
-            openwrt-${{ env.OPENWRT_VERSION }}-
-            openwrt-
       
       - name: Clone OpenWrt
         run: |
-          if [ ! -d "openwrt" ]; then
-            mv openwrt opc
-            git clone --depth=1 --branch=${{ env.OPENWRT_VERSION }} https://github.com/openwrt/openwrt.git openwrt
-          else
-            mv openwrt opc
-            if [ ! -d "opc" ]; then
-              git clone --depth=1 --branch=${{ env.OPENWRT_VERSION }} https://github.com/openwrt/openwrt.git opc
-            fi
-          fi
+          mv openwrt opc || true
+          git clone --depth=1 --branch=${{ env.OPENWRT_VERSION }} https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+      
+      - name: Cache OpenWrt source
+        uses: actions/cache@v4
+        with:
+          path: openwrt
+          key: openwrt-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/feeds.conf.default', 'openwrt/include/**/*.mk') }}
+          restore-keys: |
+            openwrt-${{ env.OPENWRT_VERSION }}-
       
       - name: Cache OpenWrt feeds
         uses: actions/cache@v4
@@ -89,15 +80,13 @@ jobs:
           key: openwrt-feeds-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/feeds.conf.default') }}
           restore-keys: |
             openwrt-feeds-${{ env.OPENWRT_VERSION }}-
-            openwrt-feeds-
       
       - name: Cache OpenWrt dl
         uses: actions/cache@v4
         with:
           path: openwrt/dl
-          key: openwrt-dl-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/package/*/Makefile') }}
+          key: openwrt-dl-${{ env.OPENWRT_VERSION }}
           restore-keys: |
-            openwrt-dl-${{ env.OPENWRT_VERSION }}-
             openwrt-dl-
       
       - name: Copy package files
@@ -149,6 +138,8 @@ jobs:
         run: |
           cd openwrt
           export CCACHE_DIR=~/.ccache
+          mkdir -p ~/.ccache
+          ccache -M 2G
           ccache -s
           make package/cli-proxy-api/compile -j$(nproc) V=s
           make package/luci-app-cli-proxy-api/compile -j$(nproc) V=s
