@@ -141,15 +141,7 @@ jobs:
           ccache -M 2G
           ccache -s
           
-          # Build Go language host dependencies first
-          echo "Building golang host package..."
-          make package/golang/host-compile -j$(nproc) V=s || {
-            echo "Golang host build failed, checking logs..."
-            find build_dir -name "*.log" -exec echo "=== {} ===" \; -exec cat {} \;
-            exit 1
-          }
-          
-          # Build our package
+          # Build our package - OpenWrt will automatically build dependencies
           echo "Building cli-proxy-api package..."
           make package/cli-proxy-api/compile -j$(nproc) V=s || {
             echo "cli-proxy-api build failed, checking logs..."
